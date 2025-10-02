@@ -7,12 +7,24 @@ import org.springframework.stereotype.Service;
 @Service
 public class KafkaProducerService {
 
-    @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private static final String TOPIC = "educacion";
 
-    private static final String TOPIC = "test-topic";
+    public KafkaProducerService(KafkaTemplate<String, String> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     public void sendMessage(String message) {
-        kafkaTemplate.send(TOPIC, message);
+        try {
+            var result = kafkaTemplate.send(TOPIC, message).get(); // <— BLOQUEA
+            System.out.println("ENVIADO OK -> topic=" + result.getRecordMetadata().topic() +
+                    ", partition=" + result.getRecordMetadata().partition() +
+                    ", offset=" + result.getRecordMetadata().offset());
+        } catch (Exception e) {
+            System.err.println("ERROR AL ENVIAR: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            kafkaTemplate.flush();
+        }
     }
 }
